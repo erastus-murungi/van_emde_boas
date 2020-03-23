@@ -46,6 +46,7 @@ bool contains(veb_node *v, key_t x) {
                 v = v->cluster[t.high];
                 x = t.low;
         }
+        div_mod(1, x);
         return (x == v->max || x == v->min);
 }
 
