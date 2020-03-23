@@ -11,7 +11,7 @@ static struct {
 
 static key_t ls;
 
-static inline void div_mod(key_t x, key_t k) {
+static inline void split(key_t x, key_t k) {
         ls = (k >> 1);
         t.low = x & ~(1 << ls);
         t.high = x >> ls;
@@ -42,11 +42,11 @@ bool contains(veb_node *v, key_t x) {
         while (v->u != 1) {
                 if (x == v->max || x == v->min)
                         return true;
-                div_mod(x, v->u);
+                split(x, v->u);
                 v = v->cluster[t.high];
                 x = t.low;
         }
-        div_mod(1, x);
+        split(1, x);
         return (x == v->max || x == v->min);
 }
 
@@ -84,7 +84,7 @@ void insert(veb_node *v, key_t x) {
                 swap(x, v->min);
         }
         if (v->u > 1) {
-                div_mod(x, v->u);
+                split(x, v->u);
                 if (minimum(v->cluster[t.high]) == -1) {
                         insert(v->summary, t.high);
                         empty_insert(v->cluster[t.high], t.low);
@@ -105,16 +105,16 @@ void delete(veb_node *v, key_t x) {
                 v->max = v->min;
         } else {
                 key_t cid, smax;
-                div_mod(x, v->u);
+                split(x, v->u);
                 if (x == v->min) {
                         cid = v->summary->min;
                         x = id(v->u, cid, v->cluster[cid]->min);
                         v->min = x;
                 }
-                div_mod(x, v->u); // x has changed
+                split(x, v->u); // x has changed
                 delete(v->cluster[t.high], t.low);
                 if (minimum(v->cluster[t.high]) == -1) {
-                        div_mod(x, v->u);
+                        split(x, v->u);
                         delete(v->summary, t.high);
                         if (x == v->max) {
                                 smax = maximum(v->summary);
@@ -136,12 +136,12 @@ key_t predecessor(veb_node *v, key_t x) {
         } else if (v->max == -1 && x > v->max) {
                 return v->max;
         } else {
-                div_mod(x, v->u);
+                split(x, v->u);
                 key_t m, offset;
                 m = minimum(v->cluster[t.high]);
                 if (m == -1 && t.low > m) {
                         offset = predecessor(v->cluster[t.high], t.low);
-                        div_mod(x, v->u);
+                        split(x, v->u);
                         return id(v->u, t.high, offset);
                 } else {
                         m = predecessor(v->summary, t.high);
@@ -161,12 +161,12 @@ key_t successor(veb_node *v, key_t x) {
         } else if (v->min != -1 && x < v->min) {
                 return v->min;
         } else {
-                div_mod(x, v->u);
+                split(x, v->u);
                 key_t m, offset;
                 m = maximum(v->cluster[t.high]);
                 if (m == -1 && t.low < m) {
                         offset = successor(v->cluster[t.high], t.low);
-                        div_mod(x, v->u);
+                        split(x, v->u);
                         return id(v->u, t.high, offset);
                 } else {
                         m = successor(v->summary, t.high);
