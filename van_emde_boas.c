@@ -1,6 +1,7 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "hicpp-signed-bitwise"
 
+
 #include "van_emde_boas.h"
 #include <stdio.h>
 
@@ -85,7 +86,7 @@ void insert(veb_node *v, key_t x) {
         }
         if (v->u > 1) {
                 split(x, v->u);
-                if (minimum(v->cluster[t.high]) == -1) {
+                if (v->cluster[t.high]->min == -1) {
                         insert(v->summary, t.high);
                         empty_insert(v->cluster[t.high], t.low);
                 } else {
@@ -113,7 +114,7 @@ void delete(veb_node *v, key_t x) {
                 }
                 split(x, v->u); // x has changed
                 delete(v->cluster[t.high], t.low);
-                if (minimum(v->cluster[t.high]) == -1) {
+                if (v->cluster[t.high]->min == -1) {
                         split(x, v->u);
                         delete(v->summary, t.high);
                         if (x == v->max) {
@@ -138,7 +139,7 @@ key_t predecessor(veb_node *v, key_t x) {
         } else {
                 split(x, v->u);
                 key_t m, offset;
-                m = minimum(v->cluster[t.high]);
+                m = v->cluster[t.high]->min;
                 if (m == -1 && t.low > m) {
                         offset = predecessor(v->cluster[t.high], t.low);
                         split(x, v->u);
@@ -163,7 +164,7 @@ key_t successor(veb_node *v, key_t x) {
         } else {
                 split(x, v->u);
                 key_t m, offset;
-                m = maximum(v->cluster[t.high]);
+                m = v->cluster[t.high]->max;
                 if (m == -1 && t.low < m) {
                         offset = successor(v->cluster[t.high], t.low);
                         split(x, v->u);
@@ -178,6 +179,5 @@ key_t successor(veb_node *v, key_t x) {
                 }
         }
 }
-
 
 #pragma clang diagnostic pop
