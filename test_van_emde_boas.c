@@ -6,29 +6,63 @@
 #include <stdio.h>
 
 
-int main(int argc, char **argv){
-/*        if (argc < 2){
-                fprintf(stderr, "run program with universe size");
+int main(int argc, char **argv) {
+/*        if (argc < 3) {
+                fprintf(stderr, "run program with universe size and number of integers to test\n");
+                exit(EXIT_FAILURE);
         }
-        long U = strtol(argv[1], NULL, 10);*/
-
-        long U = 32;
+        long U = strtol(argv[1], NULL, 10);
         long u = __builtin_ctz(U);
-        long i, n;
-        n = 10;
+        long i, na;
 
+        na = strtol(argv[2], NULL, 10);*/
+
+        long U, u, na, i;
+        U = (1 << 16);
+        u = __builtin_ctz(U);
+        na = 200;
+        if ((U & (U - 1))) {
+                fprintf(stderr, "U must be a power of 2");
+                exit(EXIT_FAILURE);
+        }
+
+        key_t *A = malloc(sizeof(key_t) * na);
+        random_array(A, U, na);
+
+//        print_array(A, na);
         veb_node *root = new_veb(u);
-        key_t a[10] = {1, 3, 16, 7, 8, 9, 14, 25, 6, 9};
-        for (i = 0; i < n; i++){
-                insert(root, a[i]);
-                printf("predecessor %d: %d\n", a[i], predecessor(root, a[i]));
-                printf(contains(root, a[i]) ? "true\n" : "false\n");
+
+        for (i = 0; i < na; i++) {
+                insert(root, A[i]);
+//                printf("predecessor %.2d: %.2d\n", A[i], predecessor(root, A[i]));
         }
-        for (i = 0; i < n; i++){
-                printf("successor %d: %d\n", a[i], successor(root, a[i]));
+//        print_array(A, na);
+        i = inorder(root, A, na);
+        if (i != -1 && i < 1000)
+                print_array(A, i);
+        printf("printed size: %ld\n", i);
+
+        uint8_t ok = 1;
+        for (i = 0; i < na; i++) {
+                ok &= contains(root, A[i]);
+        }
+        if (!ok){
+                fprintf(stderr, "possible implementation error\n");
+        }
+        for (i = 0; i < na; i++) {
+                printf("successor %.2d: %.2d\n", A[i], successor(root, A[i]));
+        }
+        ok = 1;
+        for (i = 0; i < na; i++) {
+                delete(root, A[i]);
+                ok &= !contains(root, A[i]);
+        }
+        if (!ok){
+                fprintf(stderr, "duplicates in input\n");
         }
 
-        printf(contains(root, 11) ? "true\n" : "false\n");
         to_string(root);
+        veb_free(root);
+        free(A);
         return EXIT_SUCCESS;
 }

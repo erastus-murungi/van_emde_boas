@@ -1,9 +1,4 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "hicpp-signed-bitwise"
-
-
 #include "van_emde_boas.h"
-#include <stdio.h>
 
 static struct {
     uint32_t low;
@@ -12,6 +7,11 @@ static struct {
 
 static inline bool empty(veb_node *v) {
         return v->min == -1;
+}
+
+bool isleaf(veb_node *v){
+        if (v) return v->u == 1;
+        return false;
 }
 
 static inline void split(key_t x, key_t k) {
@@ -78,12 +78,13 @@ veb_node *new_veb(key_t u) {
 }
 
 void insert(veb_node *v, key_t x) {
-        if (x >= (1<<v->u)){
-                fprintf(stderr, "%d, %U", x, (1 << v->u));
+        if (x >= (1 << v->u)){
+                fprintf(stderr, "%d is to big for universe of size: %U", x, (1 << v->u));
                 to_string(v);
                 exit(EXIT_FAILURE);
         }
-        // split x into 2 w/2-bit words
+        if (v->min == x) return; // no need to insert
+
         if (v->min == -1)
                 return empty_insert(v, x);
         if (x < v->min) // the min is not recursively stored.
@@ -109,30 +110,37 @@ void insert(veb_node *v, key_t x) {
 }
 
 void delete(veb_node *v, key_t x) {
-        if (v->min == v->max) {
+        // if x == v.min == v.max: delete by setting to -1
+        // in case of deletion of a key that has already been deleted
+        if (v->min == v->max && v->max == x) {
                 v->min = v->max = -1;
         } else if (v->u == 1) {
+                // v.min != v.max
                 v->min = (x) ? 0 : 1;
                 v->max = v->min;
         } else {
-                key_t cid, smax;
-                split(x, v->u);
+                key_t min_cluster, summary_max; // find the first non-empty cluster
+                // we are deleting a min, find a new min
                 if (x == v->min) {
-                        cid = v->summary->min;
-                        x = id(v->u, cid, v->cluster[cid]->min);
-                        v->min = x;
+                        min_cluster = v->summary->min;
+                        x = id(v->u, min_cluster, v->cluster[min_cluster]->min);
+                        v->min = x; // we have a new min and so we have to delete the new min from v
                 }
                 split(x, v->u); // x has changed
-                delete(v->cluster[t.high], t.low);
-                if (v->cluster[t.high]->min == -1) {
-                        split(x, v->u);
-                        delete(v->summary, t.high);
+#ifdef DEBUG
+                printf("x: %.2d {high(x): %d, low(x): %d}\n", x, t.high, t.low);
+#endif
+                delete(v->cluster[t.high], t.low); split(x, v->u);
+                if (empty(v->cluster[t.high])) {
+                        delete(v->summary, t.high); // delete high(x) from summary
+
+                        // if the x we deleted was the max, find a new maximum
                         if (x == v->max) {
-                                smax = maximum(v->summary);
-                                if (smax == -1) {
-                                        v->min = v->max = -1;
+                                summary_max = maximum(v->summary);
+                                if (summary_max == -1) {
+                                        v->max = v->min;
                                 } else {
-                                        v->max = id(v->u, smax, maximum(v->cluster[smax]));
+                                        v->max = id(v->u, summary_max, maximum(v->cluster[summary_max]));
                                 }
                         }
                 } else if (x == v->max) {
@@ -197,7 +205,7 @@ key_t successor(veb_node *v, key_t x) {
 
 void to_string(veb_node *v) {
         if (v) {
-                printf("|U|: %d, min: %d, max: %d\n", (1 << v->u), v->min, v->max);
+                printf("(U: %d, min: %d, max: %d)\n", (1 << v->u), v->min, v->max);
         }
 }
 
@@ -212,4 +220,13 @@ void veb_free(veb_node *v){
         }
 }
 
-#pragma clang diagnostic pop
+
+key_t inorder(veb_node *v, key_t *A, key_t na){
+        key_t i = 0;
+        key_t u = v->min;
+        if (u == -1)
+                return -1;
+        for (i = 0 ; i < na && u != -1; u = successor(v, u))
+                A[i++] = u;
+        return i;
+}
