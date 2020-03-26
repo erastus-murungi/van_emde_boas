@@ -6,17 +6,7 @@
 #include <stdio.h>
 
 
-int main(int argc, char **argv) {
-/*        if (argc < 3) {
-                fprintf(stderr, "run program with universe size and number of integers to test\n");
-                exit(EXIT_FAILURE);
-        }
-        long U = strtol(argv[1], NULL, 10);
-        long u = __builtin_ctz(U);
-        long i, na;
-
-        na = strtol(argv[2], NULL, 10);*/
-
+int main(void) {
         long U, u, na, i;
         U = (1 << 16);
         u = __builtin_ctz(U);
@@ -29,14 +19,13 @@ int main(int argc, char **argv) {
         key_t *A = malloc(sizeof(key_t) * na);
         random_array(A, U, na);
 
-//        print_array(A, na);
         veb_node *root = new_veb(u);
 
         for (i = 0; i < na; i++) {
                 insert(root, A[i]);
-//                printf("predecessor %.2d: %.2d\n", A[i], predecessor(root, A[i]));
+                printf("predecessor %.2d: %.2d\n", A[i], predecessor(root, A[i]));
         }
-//        print_array(A, na);
+
         i = inorder(root, A, na);
         if (i != -1 && i < 1000)
                 print_array(A, i);

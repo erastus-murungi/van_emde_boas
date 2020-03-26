@@ -8,7 +8,7 @@
  * goal: U
  */
 
-#define swap(x, y) (do { typeof(x) swap = x; x = y; y = swap; } while (0))
+#define swap(x, y) do { typeof(x) swap = x; x = y; y = swap; } while (0)
 
 #include <stdlib.h>
 #include <math.h>

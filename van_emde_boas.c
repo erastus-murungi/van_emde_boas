@@ -78,24 +78,15 @@ veb_node *new_veb(key_t u) {
 }
 
 void insert(veb_node *v, key_t x) {
-        if (x >= (1 << v->u)){
-                fprintf(stderr, "%d is to big for universe of size: %U", x, (1 << v->u));
-                to_string(v);
-                exit(EXIT_FAILURE);
-        }
-        if (v->min == x) return; // no need to insert
-
+        if (v->min == x)
+                return; // no need to insert
         if (v->min == -1)
                 return empty_insert(v, x);
         if (x < v->min) // the min is not recursively stored.
                 swap(x, v->min);
 
         split(x, v->u);
-
         if (v->u > 1) {
-#ifdef DEBUG
-                printf("x: %.2d {high(x): %d, low(x): %d}\n", x, t.high, t.low);
-#endif
                 if (empty(v->cluster[t.high])) {
                         insert(v->summary, t.high);
                         split(x, v->u);
@@ -104,7 +95,7 @@ void insert(veb_node *v, key_t x) {
                         insert(v->cluster[t.high], t.low);
                 }
         }
-        if (x > v->max) {          // the max is stored as a duplicate so always update it
+        if (x > v->max) {  // the max is stored as a duplicate so always update it
                 v->max = x;
         }
 }
@@ -127,9 +118,6 @@ void delete(veb_node *v, key_t x) {
                         v->min = x; // we have a new min and so we have to delete the new min from v
                 }
                 split(x, v->u); // x has changed
-#ifdef DEBUG
-                printf("x: %.2d {high(x): %d, low(x): %d}\n", x, t.high, t.low);
-#endif
                 delete(v->cluster[t.high], t.low); split(x, v->u);
                 if (empty(v->cluster[t.high])) {
                         delete(v->summary, t.high); // delete high(x) from summary
