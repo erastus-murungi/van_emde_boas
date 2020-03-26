@@ -37,6 +37,8 @@ void insert(veb_node *v, key_t x);
 
 void delete(veb_node *v, key_t x);
 
+void veb_free(veb_node *v);
+
 key_t predecessor(veb_node *v, key_t x);
 
 key_t successor(veb_node *v, key_t x);
@@ -46,6 +48,9 @@ static inline key_t minimum(veb_node *v);
 static inline key_t maximum(veb_node *v);
 
 veb_node *new_veb(key_t u);
+
+void to_string(veb_node *v);
+
 
 
 #endif //VAN_EMDE_BOAS_VAN_EMDE_BOAS_H
