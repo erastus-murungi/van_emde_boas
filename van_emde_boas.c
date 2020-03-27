@@ -9,16 +9,16 @@ bool isleaf(veb_node *v) {
         return false;
 }
 
-static inline key_t high(key_t x, key_t k){
-        return x >> (k >> 1);
+static inline key_t high(key_t x, key_t w){
+        return x >> (w >> 1);
 }
 
-static inline key_t low(key_t x, key_t k){
-        return x & ((1 << (k >> 1)) - 1);
+static inline key_t low(key_t x, key_t w){
+        return x & ((1 << (w >> 1)) - 1);
 }
 
-static inline key_t id(key_t k, key_t cid, key_t pos) {
-        return (cid << (k >> 1)) | pos;
+static inline key_t id(key_t w, key_t c, key_t i) {
+        return (c << (w >> 1)) | i;
 }
 
 static inline key_t minimum(veb_node *v) {
@@ -174,18 +174,18 @@ key_t successor(veb_node *v, key_t x) {
         } else if (v->min != -1 && x < v->min) {
                 return v->min; // the successor is the min and x is the max in the pred cluster
         } else {
-                key_t h, l, m, offset;
+                key_t h, l, m, offset, next_cluster;
                 h = high(x, v->u); l = low(x, v->u);
                 m = maximum(v->cluster[h]);
                 if (m != -1 && l < m) {
                         offset = successor(v->cluster[h], l);
                         return id(v->u, h, offset);
                 } else {
-                        m = successor(v->summary, h);
-                        if (m == -1) return m;
+                        next_cluster = successor(v->summary, h);
+                        if (next_cluster == -1) return -1;
                         else {
-                                offset = minimum(v->cluster[m]);
-                                return id(v->u, m, offset);
+                                offset = minimum(v->cluster[next_cluster]);
+                                return id(v->u, next_cluster, offset);
                         }
                 }
         }
@@ -205,6 +205,18 @@ void veb_free(veb_node *v) {
                 veb_free(v->summary);
                 for (int i = 0; i < (1 << hs); i++)
                         veb_free(v->cluster[i]);
+        }
+}
+
+size_t sizeof_veb(veb_node *v) {
+        if (v->u == 1) {
+                return LEAFSIZE;
+        } else {
+                key_t nc = 1 << (v->u - (v->u >> 1));
+                size_t s = sizeof_veb(v->summary);
+                for (key_t i = 0; i < nc; i++)
+                        s += sizeof_veb(v->cluster[i]);
+                return s + NODESIZE;
         }
 }
 

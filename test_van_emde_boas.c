@@ -14,14 +14,15 @@ long get_milli(){
 
 int main(void) {
         long U, u, na, i;
-        U = (1 << 26);
+        U = (1 << 17);
         u = __builtin_ctz(U);
-        na = 50000000;
+        na = 1200;
         if ((U & (U - 1))) {
                 fprintf(stderr, "U must be a power of 2");
                 exit(EXIT_FAILURE);
         }
 
+        printf("%zu\n", sizeof(veb_node));
         key_t *A = malloc(sizeof(key_t) * na);
         random_array(A, U, na);
         //print_array(A, na);
@@ -34,6 +35,8 @@ int main(void) {
         for (i = 0; i < na; i++) {
                 insert(root, A[i]);
         }
+
+        printf("the sizeof the tree is: %f MB\n", sizeof_veb(root) / 1e6);
         t1 = get_milli() - t1;
         printf("%ld insertions took %ld milliseconds\n", na, t1);
         to_string(root);

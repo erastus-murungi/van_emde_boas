@@ -1,12 +1,5 @@
-//
-// Created by Erastus Murungi on 3/22/20.
-//
-
 #ifndef VAN_EMDE_BOAS_VAN_EMDE_BOAS_H
 #define VAN_EMDE_BOAS_VAN_EMDE_BOAS_H
-/*
- * goal: U
- */
 
 #define swap(x, y) do { typeof(x) swap = x; x = y; y = swap; } while (0)
 
@@ -22,6 +15,12 @@
 
 typedef int32_t key_t;
 
+//#pragma pack(1)
+
+#define LEAFSIZE ((size_t) (16))
+#define NODESIZE ((size_t) (32))
+
+
 struct veb_node {
     key_t max, min;
     key_t u;
@@ -31,7 +30,7 @@ struct veb_node {
 
 typedef struct veb_node veb_node;
 
-static inline key_t id(key_t k, key_t cid, key_t pos);
+static inline key_t id(key_t k, key_t c, key_t i);
 
 bool contains(veb_node *v, key_t k);
 
@@ -59,5 +58,7 @@ void to_string(veb_node *v);
 void random_array(key_t *A, key_t u, size_t na);
 
 void print_array(key_t *A, key_t na);
+
+size_t sizeof_veb(veb_node *v);
 
 #endif //VAN_EMDE_BOAS_VAN_EMDE_BOAS_H
