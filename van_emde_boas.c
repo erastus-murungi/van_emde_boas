@@ -201,9 +201,9 @@ void veb_free(veb_node *v) {
         if (v->u == 1) {
                 return free(v);
         } else {
-                key_t hs = v->u - (v->u >> 1);
                 veb_free(v->summary);
-                for (int i = 0; i < (1 << hs); i++)
+                key_t i, nc;
+                for (i = 0, nc = 1 << (v->u - (v->u >> 1)); i < nc; i++)
                         veb_free(v->cluster[i]);
         }
 }
@@ -212,9 +212,9 @@ size_t sizeof_veb(veb_node *v) {
         if (v->u == 1) {
                 return LEAFSIZE;
         } else {
-                key_t nc = 1 << (v->u - (v->u >> 1));
                 size_t s = sizeof_veb(v->summary);
-                for (key_t i = 0; i < nc; i++)
+                key_t i, nc;
+                for (i = 0, nc = 1 << (v->u - (v->u >> 1)); i < nc; i++)
                         s += sizeof_veb(v->cluster[i]);
                 return s + NODESIZE;
         }
