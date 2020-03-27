@@ -39,13 +39,13 @@ bool contains(veb_node *v, key_t x) {
                 fprintf(stderr, "null received instead of veb_node\n");
                 exit(EXIT_FAILURE);
         }
-        key_t h, l;
+        key_t h;
         while (v->u != 1) {
                 if (x == v->max || x == v->min)
                         return true;
-                h = high(x, v->u); l = low(x, v->u);
+                h = high(x, v->u);
                 v = v->cluster[h];
-                x = l;
+                x = low(x, v->u);
         }
         return (x == v->max || x == v->min);
 }
