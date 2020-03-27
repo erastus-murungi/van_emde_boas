@@ -212,8 +212,8 @@ size_t sizeof_veb(veb_node *v) {
 
 
 key_t inorder(veb_node *v, key_t *A, key_t na) {
-        if (v->min == -1) return -1;
-
+        if (v->min == -1)
+                return -1;
         key_t i, u;
         for (i = 0, u = v->min; i < na && u != -1; u = successor(v, u))
                 A[i++] = u;
