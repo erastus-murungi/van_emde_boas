@@ -51,22 +51,15 @@ bool contains(veb_node *v, key_t x) {
 }
 
 veb_node *new_veb(key_t u) {
-        /** create a new veb tree */
-        assert (0 < u && u < 32);
-
         veb_node *v;
-
         if (u == 1) {
                 v = malloc(offsetof(struct veb_node, cluster));
                 v->u = u;
                 v->max = v->min = -1;
-
         } else {
                 key_t lb, hb;
                 v = malloc(sizeof(veb_node));
-                lb = u >> 1;
-                hb = u - lb;
-                v->u = u;
+                lb = u >> 1; hb = u - lb; v->u = u;
                 v->min = v->max = -1;
                 v->summary = new_veb(hb);
                 v->cluster = malloc(sizeof(veb_node *) * (1 << hb));
@@ -107,7 +100,7 @@ void delete(veb_node *v, key_t x) {
                 v->min = v->max = -1;
         } else if (v->u == 1) {
                 // v.min != v.max
-                v->min = (x) ? 0 : 1;
+                v->min = x ^ 1; // if (x == 1) ? 0 : 1
                 v->max = v->min;
         } else {
                 key_t min_cluster, summary_max; // find the first non-empty cluster
