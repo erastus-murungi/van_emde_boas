@@ -1,26 +1,24 @@
 #include "van_emde_boas.h"
 
-static struct {
-    uint32_t low;
-    uint32_t high;
-} t;
-
 static inline bool empty(veb_node *v) {
         return v->min == -1;
 }
 
-bool isleaf(veb_node *v){
+bool isleaf(veb_node *v) {
         if (v) return v->u == 1;
         return false;
 }
 
-static inline void split(key_t x, key_t k) {
-        t.low = x & ((1 << (k >> 1)) - 1);
-        t.high = x >> (k >> 1);
+static inline key_t high(key_t x, key_t k){
+        return x >> (k >> 1);
+}
+
+static inline key_t low(key_t x, key_t k){
+        return x & ((1 << (k >> 1)) - 1);
 }
 
 static inline key_t id(key_t k, key_t cid, key_t pos) {
-        return ((1 << (k >> 1)) * cid) + pos;
+        return (cid << (k >> 1)) | pos;
 }
 
 static inline key_t minimum(veb_node *v) {
@@ -41,14 +39,14 @@ bool contains(veb_node *v, key_t x) {
                 fprintf(stderr, "null received instead of veb_node\n");
                 exit(EXIT_FAILURE);
         }
+        key_t h, l;
         while (v->u != 1) {
                 if (x == v->max || x == v->min)
                         return true;
-                split(x, v->u);
-                v = v->cluster[t.high];
-                x = t.low;
+                h = high(x, v->u); l = low(x, v->u);
+                v = v->cluster[h];
+                x = l;
         }
-        split(1, x);
         return (x == v->max || x == v->min);
 }
 
@@ -60,14 +58,16 @@ veb_node *new_veb(key_t u) {
 
         if (u == 1) {
                 v = malloc(offsetof(struct veb_node, cluster));
-                v->u = u; v->max = v->min = -1;
+                v->u = u;
+                v->max = v->min = -1;
 
         } else {
                 key_t lb, hb;
                 v = malloc(sizeof(veb_node));
                 lb = u >> 1;
                 hb = u - lb;
-                v->u = u; v->min = v->max = -1;
+                v->u = u;
+                v->min = v->max = -1;
                 v->summary = new_veb(hb);
                 v->cluster = malloc(sizeof(veb_node *) * (1 << hb));
 
@@ -85,14 +85,14 @@ void insert(veb_node *v, key_t x) {
         if (x < v->min) // the min is not recursively stored.
                 swap(x, v->min);
 
-        split(x, v->u);
+        key_t h, l;
+        h = high(x, v->u); l = low(x, v->u);
         if (v->u > 1) {
-                if (empty(v->cluster[t.high])) {
-                        insert(v->summary, t.high);
-                        split(x, v->u);
-                        empty_insert(v->cluster[t.high], t.low);
+                if (empty(v->cluster[h])) {
+                        insert(v->summary, h);
+                        empty_insert(v->cluster[h], l);
                 } else {
-                        insert(v->cluster[t.high], t.low);
+                        insert(v->cluster[h], l);
                 }
         }
         if (x > v->max) {  // the max is stored as a duplicate so always update it
@@ -117,10 +117,11 @@ void delete(veb_node *v, key_t x) {
                         x = id(v->u, min_cluster, v->cluster[min_cluster]->min);
                         v->min = x; // we have a new min and so we have to delete the new min from v
                 }
-                split(x, v->u); // x has changed
-                delete(v->cluster[t.high], t.low); split(x, v->u);
-                if (empty(v->cluster[t.high])) {
-                        delete(v->summary, t.high); // delete high(x) from summary
+                key_t h, l;
+                h = high(x, v->u); l = low(x, v->u);
+                delete(v->cluster[h], l);
+                if (empty(v->cluster[h])) {
+                        delete(v->summary, h); // delete high(x) from summary
 
                         // if the x we deleted was the max, find a new maximum
                         if (x == v->max) {
@@ -132,7 +133,7 @@ void delete(veb_node *v, key_t x) {
                                 }
                         }
                 } else if (x == v->max) {
-                        v->max = id(v->u, t.high, maximum(v->cluster[t.high]));
+                        v->max = id(v->u, h, maximum(v->cluster[h]));
                 }
         }
 }
@@ -143,24 +144,23 @@ key_t predecessor(veb_node *v, key_t x) {
         } else if (v->max != -1 && x > v->max) {
                 return v->max;
         } else {
-                split(x, v->u);
-                key_t m, offset;
-                m = minimum(v->cluster[t.high]);
+                key_t h, l, m, i, pred_cluster;
+                h = high(x, v->u); l = low(x, v->u); m = minimum(v->cluster[h]);
                 // if the x > than the minimum element in x's cluster.
                 // Recursively find the predecessor to low(x) cluster[high(x)]
-                if (!empty(v->cluster[t.high]) && t.low > m) {
-                        offset = predecessor(v->cluster[t.high], t.low); split(x, v->u);
-                        return id(v->u, t.high, offset);
+                if (!empty(v->cluster[h]) && l > m) {
+                        i = predecessor(v->cluster[h], l);
+                        return id(v->u, h, i);
                 } else {
                         // find the previous non_empty cluster
-                        m = predecessor(v->summary, t.high);
+                        pred_cluster = predecessor(v->summary, h);
                         // if there is no previous non_empty cluster, then the current cluster is the minimum cluster
                         // 1. either return the min if x > min:
-                        if (m == -1) {
+                        if (pred_cluster == -1) {
                                 return (v->min != -1 && x > v->min) ? v->min : -1;
                         } else {
-                                offset = maximum(v->cluster[m]);
-                                return id(v->u, m, offset);
+                                i = maximum(v->cluster[pred_cluster]);
+                                return id(v->u, pred_cluster, i);
                         }
                 }
         }
@@ -174,14 +174,14 @@ key_t successor(veb_node *v, key_t x) {
         } else if (v->min != -1 && x < v->min) {
                 return v->min; // the successor is the min and x is the max in the pred cluster
         } else {
-                key_t m, offset;
-                split(x, v->u);
-                m = maximum(v->cluster[t.high]);
-                if (m != -1 && t.low < m) {
-                        offset = successor(v->cluster[t.high], t.low); split(x, v->u);
-                        return id(v->u, t.high, offset);
+                key_t h, l, m, offset;
+                h = high(x, v->u); l = low(x, v->u);
+                m = maximum(v->cluster[h]);
+                if (m != -1 && l < m) {
+                        offset = successor(v->cluster[h], l);
+                        return id(v->u, h, offset);
                 } else {
-                        m = successor(v->summary, t.high);
+                        m = successor(v->summary, h);
                         if (m == -1) return m;
                         else {
                                 offset = minimum(v->cluster[m]);
@@ -197,7 +197,7 @@ void to_string(veb_node *v) {
         }
 }
 
-void veb_free(veb_node *v){
+void veb_free(veb_node *v) {
         if (v->u == 1) {
                 return free(v);
         } else {
@@ -209,12 +209,11 @@ void veb_free(veb_node *v){
 }
 
 
-key_t inorder(veb_node *v, key_t *A, key_t na){
-        key_t i = 0;
-        key_t u = v->min;
-        if (u == -1)
-                return -1;
-        for (i = 0 ; i < na && u != -1; u = successor(v, u))
+key_t inorder(veb_node *v, key_t *A, key_t na) {
+        if (v->min == -1) return -1;
+
+        key_t i, u;
+        for (i = 0, u = v->min; i < na && u != -1; u = successor(v, u))
                 A[i++] = u;
         return i;
 }
