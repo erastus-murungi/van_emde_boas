@@ -122,7 +122,6 @@ void delete(veb_node *v, key_t x) {
                 delete(v->cluster[h], l);
                 if (empty(v->cluster[h])) {
                         delete(v->summary, h); // delete high(x) from summary
-
                         // if the x we deleted was the max, find a new maximum
                         if (x == v->max) {
                                 summary_max = maximum(v->summary);
